@@ -78,6 +78,25 @@ markdown_extensions:
       generic: true
 ```
 
+## Figures KiCad et Fritzing
+
+`tools/export_figures.sh` produit des SVG propres (recadrés, textes en
+chemins, SVG simple) pour MkDocs et Canoprof :
+
+```bash
+sudo dnf install kicad inkscape
+tools/export_figures.sh sources/ docs/img/
+```
+
+- Fichiers `.kicad_sch` : exportés via `kicad-cli` (sans cartouche, fond transparent).
+- Fichiers `.kicad_pcb` : surface de la carte seule, couches
+  `F.Cu,F.Silkscreen,Edge.Cuts` (modifiable : `PCB_LAYERS=B.Cu,Edge.Cuts`).
+- Fritzing : exporter à la main (*Fichier > Exporter > comme image > SVG*)
+  dans `sources/`, le script se charge du nettoyage.
+
+Les options de `kicad-cli` varient selon la version de KiCad :
+vérifier avec `kicad-cli pcb export svg -h`.
+
 ## Vérification de structure
 
 `tools/check_structure.py` vérifie que chaque imbrication XML générée existe
