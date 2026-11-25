@@ -8,7 +8,8 @@ into Canoprof, so a single file feeds both the website and Canoprof.
 
 Supported Markdown -> Canoprof mapping
 --------------------------------------
-    front matter title/abstract/...   -> cp:activityM (title, abstract, duration...)
+    front matter title/abstract/...   -> cp:activityM (title, abstract, duration,
+                                         organisation, materials "a | b | c")
     ## Heading                        -> new sp:info block with that title
     ### Heading                       -> emphasised paragraph inside the block
     !!! info|definition|example|      -> typed block (sp:info, sp:definition,
@@ -41,6 +42,7 @@ import argparse
 import re
 import sys
 import zipfile
+from urllib.parse import unquote
 from dataclasses import dataclass, field
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -82,6 +84,7 @@ BLOCK_TYPES = {
     "warning": "warning", "attention": "warning", "danger": "warning",
     "reminder": "reminder", "rappel": "reminder",
     "extra": "extra", "complement": "extra", "tip": "extra",
+    "solution": "extra",   # `??? solution` from scar2md, kept as an extra block
 }
 
 # Admonition tag -> element placed inside the current cp:flow.
@@ -133,7 +136,12 @@ def parse_front_matter(text: str) -> dict[str, str]:
     for line in text.splitlines():
         if ":" in line and not line.lstrip().startswith("#"):
             key, value = line.split(":", 1)
-            meta[key.strip().lower()] = value.strip().strip("\"'")
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] == '"':
+                value = value[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+            elif len(value) >= 2 and value[0] == value[-1] == "'":
+                value = value[1:-1].replace("''", "'")
+            meta[key.strip().lower()] = value
     return meta
 
 
@@ -174,13 +182,20 @@ class Converter:
 
     def _embed_file(self, target: str) -> str | None:
         """Embed a local file; return its reference URI or None if missing."""
+        target = unquote(target)  # the parser percent-encodes spaces/accents
         path = (self.source.parent / target).resolve()
         if not path.is_file():
             self.warnings.append(f"missing file: {target}")
             return None
+        data = path.read_bytes()
         name = path.name
+        suffix = 2
+        # All resources sit next to the activity: rename on name clashes.
+        while name in self.resources and self.resources[name].data != data:
+            name = f"{path.stem}_{suffix}{path.suffix}"
+            suffix += 1
         if name not in self.resources:
-            self.resources[name] = Resource(name, path.read_bytes(), True)
+            self.resources[name] = Resource(name, data, True)
         return self._ref(name)
 
     def _embed_code(self, code: str, lang: str) -> str:
@@ -426,10 +441,14 @@ class Converter:
         if meta.get("abstract"):
             desc = sub(sub(activity_m, sp("abstract")), cp("txtDesc"))
             new_para(desc).text = meta["abstract"]
-        if meta.get("duration") or meta.get("organisation"):
+        if meta.get("duration") or meta.get("organisation") or meta.get("materials"):
             org = sub(activity_m, sp("organisationData"))
             if meta.get("duration"):
                 sub(org, sp("duration")).text = meta["duration"]
+            if meta.get("materials"):
+                desc = sub(sub(org, sp("materials")), cp("txtDesc"))
+                for item in meta["materials"].split(" | "):
+                    new_para(desc).text = item
             if meta.get("organisation"):
                 desc = sub(sub(org, sp("organisation")), cp("txtDesc"))
                 new_para(desc).text = meta["organisation"]

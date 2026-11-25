@@ -78,6 +78,26 @@ markdown_extensions:
       generic: true
 ```
 
+## Sens inverse : `scar2md.py` (Canoprof → Markdown)
+
+Pour migrer un existant : un export Canoprof devient une arborescence de
+fichiers `.md`, prête pour MkDocs et réimportable avec `md2canoprof.py`.
+
+```bash
+python3 scar2md.py periode1.scar -o docs/          # --force pour écraser
+mkdocs serve
+```
+
+- Chaque activité texte devient un `.md` rangé à son chemin d'atelier ; images,
+  SVG, vidéos et fichiers joints sont copiés à côté ; le code des items `.code`
+  est intégré en blocs ```` ```cpp ````.
+- Les collections (périodes, séquences) deviennent des pages d'index.
+- Exercices à question ouverte : `## Titre` + `??? solution` (repliable).
+- Non convertis (signalés) : quiz/QCM, activités HTML. La disposition
+  côte à côte est remise à la suite.
+
+MkDocs doit alors activer aussi `pymdownx.details` (solutions repliables).
+
 ## Figures KiCad et Fritzing
 
 `tools/export_figures.sh` produit des SVG propres (recadrés, textes en
