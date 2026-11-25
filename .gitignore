@@ -1,0 +1,4 @@
+*.scar
+__pycache__/
+.venv/
+site/
