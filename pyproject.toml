@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "md2canoprof"
+description = "Convert between MkDocs-flavoured Markdown and Canoprof archives (.scar)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "markdown-it-py>=3.0",
+    "mdit-py-plugins>=0.4",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
+
+[project.scripts]
+md2canoprof = "md2canoprof.cli:md2canoprof"
+scar2md = "md2canoprof.cli:scar2md"
+canoprof-check = "md2canoprof.cli:canoprof_check"
+
+[tool.setuptools]
+packages = ["md2canoprof"]
+
+[tool.setuptools.dynamic]
+version = { attr = "md2canoprof.__version__" }
+
+[tool.setuptools.package-data]
+md2canoprof = ["data/*.txt"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

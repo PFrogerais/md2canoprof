@@ -1,7 +1,7 @@
 # md2canoprof
 
-Convertit un fichier **Markdown** (syntaxe MkDocs Material) en archive
-**Canoprof** (`.scar`) importable en une seule opération.
+Convertit des fichiers **Markdown** (syntaxe MkDocs Material) en archives
+**Canoprof** (`.scar`) importables en une seule opération, et inversement.
 
 Une même source `.md` sert donc à la fois :
 
@@ -9,7 +9,7 @@ Une même source `.md` sert donc à la fois :
 - à **Canoprof**, par un simple import.
 
 ```
-seance.md ──► md2canoprof.py ──► seance.scar ──► Canoprof (Importer)
+seance.md ──► md2canoprof ──► seance.scar ──► Canoprof (Importer)
     │
     └──────► mkdocs build ──► site web
 ```
@@ -17,16 +17,20 @@ seance.md ──► md2canoprof.py ──► seance.scar ──► Canoprof (Imp
 ## Installation (Fedora / Debian / Ubuntu)
 
 ```bash
+git clone https://github.com/PFrogerais/md2canoprof.git && cd md2canoprof
 python3 -m venv ~/.venv/md2canoprof
 source ~/.venv/md2canoprof/bin/activate
-pip install -r requirements.txt
+pip install -e .                    # installe md2canoprof, scar2md, canoprof-check
 ```
+
+Avec `-e`, un `git pull` suffit ensuite pour mettre à jour les commandes.
 
 ## Utilisation
 
 ```bash
-python3 md2canoprof.py examples/tp_led.md            # -> examples/tp_led.scar
-python3 md2canoprof.py examples/tp_led.md -o tp.scar
+md2canoprof examples/tp_led.md                 # -> examples/tp_led.scar
+md2canoprof examples/tp_led.md -o tp.scar
+md2canoprof docs/terminale/*.md -o build/      # plusieurs fichiers -> un dossier
 ```
 
 Dans Canoprof, importe le `.scar` dans le dossier de ton choix. Un
@@ -78,13 +82,13 @@ markdown_extensions:
       generic: true
 ```
 
-## Sens inverse : `scar2md.py` (Canoprof → Markdown)
+## Sens inverse : `scar2md` (Canoprof → Markdown)
 
 Pour migrer un existant : un export Canoprof devient une arborescence de
-fichiers `.md`, prête pour MkDocs et réimportable avec `md2canoprof.py`.
+fichiers `.md`, prête pour MkDocs et réimportable avec `md2canoprof`.
 
 ```bash
-python3 scar2md.py periode1.scar -o docs/          # --force pour écraser
+scar2md periode1.scar -o docs/          # --force pour écraser
 mkdocs serve
 ```
 
@@ -119,16 +123,49 @@ vérifier avec `kicad-cli pcb export svg -h`.
 
 ## Vérification de structure
 
-`tools/check_structure.py` vérifie que chaque imbrication XML générée existe
-dans un atelier Canoprof de référence (un export `.scar` décompressé) :
+`canoprof-check` vérifie que chaque imbrication XML d'un `.scar` généré existe
+dans un vrai atelier Canoprof. La référence (noms de balises uniquement, aucun
+contenu) est embarquée dans `md2canoprof/data/known_nestings.txt`.
 
 ```bash
-mkdir /tmp/ref && unzip -q mon_export.scar -d /tmp/ref
-python3 tools/check_structure.py "/tmp/ref/&" examples/tp_led.scar
+canoprof-check build/*.scar
+canoprof-check --learn md2canoprof/data/known_nestings.txt mon_export.scar  # enrichir
 ```
+
+## Organisation du code
+
+```
+md2canoprof/
+├── schema.py            # SOURCE UNIQUE : espaces de noms, blocs <-> admonitions,
+│                        #   langages <-> types MIME, rôles
+├── frontmatter.py       # en-tête --- title: ... --- (lecture et écriture)
+├── archive.py           # lecture / écriture des .scar
+├── markdown_to_scar.py  # Markdown -> Canoprof
+├── scar_to_markdown.py  # Canoprof -> Markdown
+├── structure.py         # vérification des imbrications
+├── cli.py               # commandes md2canoprof, scar2md, canoprof-check
+└── data/known_nestings.txt
+tests/                   # pytest : unitaires + aller-retour
+tools/export_figures.sh  # figures KiCad / Fritzing
+```
+
+**Ajouter un type de bloc ou un langage** : une ligne dans `schema.py`
+(`BLOCK_ALIASES` ou `CODE_LANGUAGES`) ; les deux sens de conversion en
+profitent.
+
+## Développement
+
+```bash
+pip install -e ".[dev]"
+ruff check .        # style et erreurs
+pytest              # 20 tests, < 1 s
+```
+
+La CI GitHub Actions relance `ruff`, `pytest` et la conversion de l'exemple à
+chaque `git push`.
 
 ## Limites actuelles
 
-- QCM et quiz, mise en page côte à côte (`visavis`), solutions : non gérés.
+- QCM et quiz : non gérés. Côte à côte (`visavis`) : remis à la suite.
 - Les blocs typés imbriqués sont aplatis dans le bloc courant.
 - Testé avec Canoprof Expert 3.
