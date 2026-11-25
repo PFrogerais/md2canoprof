@@ -20,7 +20,7 @@ seance.md ──► md2canoprof ──► seance.scar ──► Canoprof (Import
 git clone https://github.com/PFrogerais/md2canoprof.git && cd md2canoprof
 python3 -m venv ~/.venv/md2canoprof
 source ~/.venv/md2canoprof/bin/activate
-pip install -e .                    # installe md2canoprof, scar2md, canoprof-check
+pip install -e .     # installe md2canoprof, scar2md, canoprof-check, export_figures.sh
 ```
 
 Avec `-e`, un `git pull` suffit ensuite pour mettre à jour les commandes.
@@ -109,7 +109,7 @@ chemins, SVG simple) pour MkDocs et Canoprof :
 
 ```bash
 sudo dnf install kicad inkscape
-tools/export_figures.sh sources/ docs/img/
+export_figures.sh sources/ docs/img/
 ```
 
 - Fichiers `.kicad_sch` : exportés via `kicad-cli` (sans cartouche, fond transparent).

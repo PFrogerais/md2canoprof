@@ -23,6 +23,7 @@ canoprof-check = "md2canoprof.cli:canoprof_check"
 
 [tool.setuptools]
 packages = ["md2canoprof"]
+script-files = ["tools/export_figures.sh"]   # installed next to the commands
 
 [tool.setuptools.dynamic]
 version = { attr = "md2canoprof.__version__" }
